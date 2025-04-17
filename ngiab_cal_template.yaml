@@ -1,0 +1,114 @@
+general:
+  strategy:
+    type: estimation
+    algorithm: dds
+  name: calib
+  log: true
+  workdir: /ngen/ngen/data/calibration
+  yaml_file: /ngen/ngen/data/calibration/ngen_cal_conf.yaml
+  start_iteration: 0
+  iterations: 100
+  restart: 0
+CFE: &id001
+  - name: b
+    min: 2.0
+    max: 15.0
+    init: 4.05
+  - name: satpsi
+    min: 0.03
+    max: 0.955
+    init: 0.355
+  - name: satdk
+    min: 1.0e-07
+    max: 0.000726
+    init: 3.38e-06
+  - name: maxsmc
+    min: 0.16
+    max: 0.59
+    init: 0.439
+  - name: refkdt
+    min: 0.1
+    max: 4.0
+    init: 1.0
+  - name: slope
+    min: 0.0
+    max: 1.0
+    init: 0.1
+  - name: max_gw_storage
+    min: 0.01
+    max: 0.25
+    init: 0.05
+  - name: expon
+    min: 1.0
+    max: 8.0
+    init: 3.0
+  - name: Cgw
+    min: 1.8e-06
+    max: 0.0018
+    init: 1.8e-05
+  - name: Klf
+    min: 0.0
+    max: 1.0
+    init: 0.01
+  - name: Kn
+    min: 0.0
+    max: 1.0
+    init: 0.03
+NoahOWP: &id002
+  - name: RSURF_EXP
+    min: 1.0
+    max: 6.0
+    init: 5.0
+  - name: CWP
+    min: 0.09
+    max: 0.36
+    init: 0.18
+  - name: MP
+    min: 3.6
+    max: 12.6
+    init: 9.0
+  - name: VCMX25
+    min: 24.0
+    max: 112.0
+    init: 52.2
+  - name: MFSNO
+    min: 0.5
+    max: 4.0
+    init: 2.0
+  - name: RSURF_SNOW
+    min: 0.136
+    max: 100.0
+    init: 50.0
+  - name: SCAMAX
+    min: 0.7
+    max: 1.0
+    init: 0.9
+model:
+  type: ngen
+  binary: /dmod/bin/mpi-ngen
+  realization: /ngen/ngen/data/calibration/realization.json
+  catchments: /ngen/ngen/data/config/{subset_hydrofabric}
+  nexus: /ngen/ngen/data/config/{subset_hydrofabric}
+  crosswalk: /ngen/ngen/data/calibration/crosswalk.json
+  obsflow: /ngen/ngen/data/calibration/obs_hourly_discharge.csv
+  strategy: uniform
+  params:
+    CFE: *id001
+    NoahOWP: *id002
+  eval_params:
+    objective: kge
+    evaluation_start: "{evaluation_start}"
+    evaluation_stop: "{evaluation_stop}"
+    valid_start_time: "{valid_start_time}"
+    valid_end_time: "{valid_end_time}"
+    valid_eval_start_time: "{valid_eval_start_time}"
+    valid_eval_end_time: "{valid_eval_end_time}"
+    full_eval_start_time: "{full_eval_start_time}"
+    full_eval_end_time: "{full_eval_end_time}"
+    save_output_iteration: 0
+    save_plot_iteration: 0
+    save_plot_iter_freq: 50
+    basinID: { gage_id }
+    threshold: null
+    site_name: "USGS {gage_id}: "
+    user: ""
