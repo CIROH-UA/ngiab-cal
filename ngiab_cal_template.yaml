@@ -108,7 +108,7 @@ model:
     save_output_iteration: 0
     save_plot_iteration: 0
     save_plot_iter_freq: 50
-    basinID: { gage_id }
+    basinID: {gage_id}
     threshold: null
     site_name: "USGS {gage_id}: "
     user: ""

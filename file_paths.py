@@ -23,7 +23,7 @@ def search_for_file(expected_file: Path, search_glob: str) -> Path:
             )
 
 
-class file_paths:
+class FilePaths:
     """
     This class contains all of the file paths used in the calibration workflow
     workflow.
@@ -94,7 +94,7 @@ class file_paths:
         return self.calibration_folder / "obs_hourly_discharge.csv"
 
 
-def validate_input_folder(data_folder: file_paths, skip_calibration_folder: bool = True) -> bool:
+def validate_input_folder(data_folder: FilePaths, skip_calibration_folder: bool = True) -> bool:
     """
     Checks all the file and folders required for calibration are present.
     Loops over all properties of an object that return a path and checks that they exist.
@@ -113,7 +113,6 @@ def validate_input_folder(data_folder: file_paths, skip_calibration_folder: bool
             if isinstance(path, (Path)) and not callable(path):
                 if skip_calibration_folder and path.is_relative_to(data_folder.calibration_folder):
                     continue
-                print(path)
                 if not path.exists():
                     raise FileNotFoundError(f"unable to locate {attr_name} at {path}")
         except Exception as e:

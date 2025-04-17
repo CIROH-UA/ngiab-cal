@@ -4,7 +4,11 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "aiohttp>=3.11.16",
+    "hydrotools-nwis-client>=4.1.0",
+    "pandas>=2.2.3",
+]
 
 [dependency-groups]
 dev = ["ruff>=0.11.6"]
