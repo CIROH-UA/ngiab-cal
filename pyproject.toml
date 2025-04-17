@@ -10,6 +10,9 @@ dependencies = [
     "pandas>=2.2.3",
 ]
 
+[project.scripts]
+ngiab-cal = "ngiab_cal.__main__:main"
+
 [dependency-groups]
 dev = ["ruff>=0.11.6"]
 

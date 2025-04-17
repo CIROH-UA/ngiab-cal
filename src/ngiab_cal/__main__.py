@@ -2,6 +2,7 @@ import argparse
 import json
 import logging
 import sqlite3
+import sys
 import warnings
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -10,7 +11,7 @@ import pandas as pd
 from aiohttp.client_exceptions import ContentTypeError
 from hydrotools.nwis_client import IVDataService
 
-from file_paths import FilePaths
+from .file_paths import FilePaths
 
 logger = logging.getLogger(__name__)
 
@@ -246,7 +247,7 @@ def create_calibration_config(data_folder: Path, gage_id: str) -> None:
 #         f.write(json.dumps(realization))
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description="Create a calibration config for ngen-cal")
     parser.add_argument(
         "data_folder",
@@ -256,3 +257,7 @@ if __name__ == "__main__":
     parser.add_argument("-g", "--gage", type=str, help="Gage ID to use for calibration")
     args = parser.parse_args()
     create_calibration_config(args.data_folder, args.gage)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
