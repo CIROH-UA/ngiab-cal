@@ -91,7 +91,7 @@ def write_usgs_data_to_csv(start: datetime, end: datetime, gage_id: str, output_
 
 
 def write_ngen_cal_config(
-    data_folder: FilePaths, gage_id: str, start: datetime, end: datetime
+    data_folder: FilePaths, gage_id: str, start: datetime, end: datetime, iterations: int
 ) -> None:
     logging.info("Writing ngiab-cal configuration")
     total_range = start - end
@@ -116,6 +116,7 @@ def write_ngen_cal_config(
     with open(data_folder.calibration_config, "w") as file:
         file.write(
             template.format(
+                iterations=iterations,
                 subset_hydrofabric=data_folder.geopackage_path.name,
                 evaluation_start=evaluation_start.strftime(TIME_FORMAT),
                 evaluation_stop=evaluation_end.strftime(TIME_FORMAT),
@@ -144,7 +145,7 @@ def pick_gage_to_calibrate(hydrofabric: Path) -> str:
         return input(f"Select a gage to calibrate from {gages}: ")
 
 
-def create_calibration_config(data_folder: Path, gage_id: str) -> None:
+def create_calibration_config(data_folder: Path, gage_id: str, iterations: int = 100) -> None:
     # first pass at this so I'm probably not using ngen-cal properly
     # for now keep it simple and only allow single gage lumped calibration
 
@@ -170,7 +171,7 @@ def create_calibration_config(data_folder: Path, gage_id: str) -> None:
     copy_and_convert_paths_to_absolute(files.template_troute, files.calibration_troute)
 
     # create the dates for the ngen-cal config
-    write_ngen_cal_config(files, gage_id, start, end)
+    write_ngen_cal_config(files, gage_id, start, end, iterations)
 
     logging.warning("This is still experimental, run the following command to start calibration:")
     logging.warning(f'docker run -it -v "{files.data_folder}:/ngen/ngen/data" joshcu/ngiab-cal')
@@ -207,12 +208,15 @@ def main():
         help="Try to automatically run the calibration, this may be unstable",
         action="store_true",
     )
+    parser.add_argument(
+        "-i", "--iterations", help="number of iterations to calibrate for", type=int
+    )
     args = parser.parse_args()
     paths = FilePaths(args.data_folder)
     config_valid = validate_input_folder(paths, skip_calibration_folder=False)
 
     if not config_valid or args.force:
-        create_calibration_config(args.data_folder, args.gage)
+        create_calibration_config(args.data_folder, args.gage, args.iterations)
 
     if args.run:
         logging.info(f"Starting calibration run at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")

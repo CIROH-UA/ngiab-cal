@@ -7,7 +7,7 @@ general:
   workdir: /ngen/ngen/data/calibration
   yaml_file: /ngen/ngen/data/calibration/ngen_cal_conf.yaml
   start_iteration: 0
-  iterations: 100
+  iterations: {iterations}
   restart: 0
 CFE: &id001
   - name: b
