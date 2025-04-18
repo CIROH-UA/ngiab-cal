@@ -342,6 +342,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "aiohttp" },
+    { name = "colorama" },
     { name = "hydrotools-nwis-client" },
     { name = "pandas" },
 ]
@@ -354,6 +355,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "aiohttp", specifier = ">=3.11.16" },
+    { name = "colorama", specifier = ">=0.4.6" },
     { name = "hydrotools-nwis-client", specifier = ">=4.1.0" },
     { name = "pandas", specifier = ">=2.2.3" },
 ]

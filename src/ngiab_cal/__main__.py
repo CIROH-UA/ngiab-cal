@@ -11,9 +11,8 @@ import pandas as pd
 from aiohttp.client_exceptions import ContentTypeError
 from hydrotools.nwis_client import IVDataService
 
-from .file_paths import FilePaths
-
-logger = logging.getLogger(__name__)
+from ngiab_cal.custom_logging import setup_logging
+from ngiab_cal.file_paths import FilePaths
 
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
@@ -73,6 +72,7 @@ def get_start_end_times(realization_path: Path) -> tuple[datetime, datetime]:
 
 def write_usgs_data_to_csv(start: datetime, end: datetime, gage_id: str, output_file: Path) -> None:
     """Downloads the usgs observed data to csv for a given gage and time range"""
+    logging.info(f"Downloading USGS data for {gage_id} between {start} and {end}")
     data = pd.DataFrame()
     try:
         with IVDataService(cache_filename=FilePaths.hydrotools_cache) as service:
@@ -92,6 +92,7 @@ def write_usgs_data_to_csv(start: datetime, end: datetime, gage_id: str, output_
 def write_ngen_cal_config(
     data_folder: FilePaths, gage_id: str, start: datetime, end: datetime
 ) -> None:
+    logging.info("Writing ngiab-cal configuration")
     total_range = start - end
     # warm up is half the range, capped at 365 days
     warm_up = timedelta(days=(total_range.days / 2))
@@ -147,6 +148,7 @@ def create_calibration_config(data_folder: Path, gage_id: str) -> None:
     # for now keep it simple and only allow single gage lumped calibration
 
     # This initialization also checks all the files we need exist
+    logging.info("Validating input files")
     files = FilePaths(data_folder)
     if not gage_id:
         gage_id = pick_gage_to_calibrate(files.geopackage_path)
@@ -168,86 +170,12 @@ def create_calibration_config(data_folder: Path, gage_id: str) -> None:
     # create the dates for the ngen-cal config
     write_ngen_cal_config(files, gage_id, start, end)
 
-    print("This is still experimental, run the following command to start calibration:")
-    print(f'docker run -it -v "{files.data_folder}:/ngen/ngen/data" joshcu/ngiab-cal')
-
-
-# def generate_best_realization(calibration_dir: Path) -> None:
-#     # this relies too much on the folder structure of this, ngiab, and ngen-cal
-#     output_realization = calibration_dir / "../config/" / "best_realization.json"
-#     source_realization = calibration_dir / "../config/" / "realization.json"
-
-#     # read the calibration config to figure out what parameters belong to which model
-#     calibration_config = calibration_dir / "ngen_cal_conf.yaml"
-#     with open(calibration_config, "r") as f:
-#         config = f.read()
-#     config = yaml.safe_load(config)
-
-#     # dictionary of model names to their parameters
-#     models = config["model"]["params"]
-
-#     parameters = {}
-
-#     # the default config uses some kind of linked yaml object that won't load
-#     for model_name in models:
-#         model = config[model_name]
-#         parameters[model_name] = []
-#         for param in model:
-#             parameters[model_name].append(param["name"])
-
-#     # now we have dictionary of model names to their parameters
-#     with open(source_realization, "r") as f:
-#         realization = json.loads(f.read())
-
-#     # now to get the best parameters
-#     objective_metric = config["model"]["eval_params"]["objective"]
-
-#     # get all the worker outputs
-#     # glob calibration_dir/Output/*/ngen_*_worker/*_metrics_iteration.csv
-#     # look for the column with the objective metric and find the row with the best value
-#     # then open *_params_iteration.csv in the same folder to get the parameters
-#     # then update the realization.json file with the new parameters
-#     metric_files = calibration_dir.glob("Output/*/ngen_*_worker/*_metrics_iteration.csv")
-#     current_best = None
-#     for file in metric_files:
-#         metric_df = pd.read_csv(file)
-#         # check the headers to match the case of the objective metric
-#         if objective_metric.lower() in metric_df.columns:
-#             objective_metric = objective_metric.lower()
-#         if objective_metric.upper() in metric_df.columns:
-#             objective_metric = objective_metric.upper()
-#         # register the best value on the first run
-#         if current_best is None:
-#             current_best = metric_df[objective_metric].max()
-
-#         # if the current workers best worse than the current best, skip it
-#         if metric_df[objective_metric].max() < current_best:
-#             continue
-#         best_row = metric_df[metric_df[objective_metric] == metric_df[objective_metric].max()]
-#         best_iteration = best_row["iteration"]
-#         worker_dir = file.parent
-#         iteration_file = list(worker_dir.glob("*_params_iteration.csv"))[0]
-#         params_df = pd.read_csv(iteration_file)
-#         params_df = params_df.set_index("iteration")
-#         best_params = pd.read_csv(iteration_file).iloc[best_iteration]
-
-#     realization_modules = realization["global"]["formulations"][0]["params"]["modules"]
-
-#     # loop over the models used in the realization
-#     for module in realization_modules:
-#         module_name = module["params"]["model_type_name"]
-#         if module_name in parameters:
-#             model_params = {}
-#             for parameter_name in parameters[module_name]:
-#                 if parameter_name in best_params:
-#                     model_params[parameter_name] = best_params[parameter_name].values[0]
-#             module["params"]["model_params"] = model_params
-
-#     with open(output_realization, "w") as f:
-#         f.write(json.dumps(realization))
+    logging.warning("This is still experimental, run the following command to start calibration:")
+    logging.warning(f'docker run -it -v "{files.data_folder}:/ngen/ngen/data" joshcu/ngiab-cal')
 
 
 def main():
+    setup_logging()
     parser = argparse.ArgumentParser(description="Create a calibration config for ngen-cal")
     parser.add_argument(
         "data_folder",
