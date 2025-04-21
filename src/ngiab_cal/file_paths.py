@@ -94,6 +94,10 @@ class FilePaths:
     def observed_discharge(self) -> Path:
         return self.calibration_folder / "obs_hourly_discharge.csv"
 
+    @property
+    def calibrated_realization(self) -> Path:
+        return self.calibration_folder / "Output" / "Validation_Run" / "realization.json"
+
 
 def validate_input_folder(data_folder: FilePaths, skip_calibration_folder: bool = True) -> bool:
     """

@@ -41,6 +41,7 @@ def copy_and_convert_paths_to_absolute(source_file: Path, dest_file: Path) -> No
             for line in f:
                 line = line.replace("./", "/ngen/ngen/data/")
                 line = line.replace("/ngen/ngen/data/outputs/ngen/", ".")
+                line = line.replace("/ngen/ngen/data/outputs/ngen", ".")
                 line = line.replace("outputs/troute/", ".")
                 # ngiab-cal takes troute yaml as an input but doesn't replace this value
                 line = line.replace(
@@ -191,6 +192,35 @@ def run_calibration(folder_to_run: Path) -> None:
         logging.error("Calibration failed.")
 
 
+def copy_best_params(realization: Path, calibrated_realization: Path) -> None:
+    if not realization.exists() or not calibrated_realization.exists():
+        logging.error(
+            f"Realization path {realization} or calibrated realization path {calibrated_realization} does not exist."
+        )
+    logging.info(
+        f"Extracting model parameters from calibrated realization: {calibrated_realization}"
+    )
+    with open(realization) as f:
+        uncalibrated = json.load(f)
+    with open(realization.with_suffix("._old"), "w") as f:
+        json.dump(uncalibrated, f, indent=4)
+    with open(calibrated_realization) as f:
+        calibrated = json.load(f)
+
+    # this assumes that the calibration was done in ngiab
+    old_modules = uncalibrated["global"]["formulations"][0]["params"]["modules"]
+    new_modules = calibrated["global"]["formulations"][0]["params"]["modules"]
+
+    for old_module in old_modules:
+        for new_module in new_modules:
+            if old_module["params"]["model_type_name"] == new_module["params"]["model_type_name"]:
+                old_module["params"]["model_params"] = new_module["params"]["model_params"]
+
+    logging.info(f"Copying model parameters into {realization}")
+    with open(realization, "w") as f:
+        json.dump(uncalibrated, f, indent=4)
+
+
 def main():
     setup_logging()
     parser = argparse.ArgumentParser(description="Create a calibration config for ngen-cal")
@@ -213,14 +243,23 @@ def main():
     )
     args = parser.parse_args()
     paths = FilePaths(args.data_folder)
+    logging.info(f"Searching for calibration files in {paths.calibration_folder}")
     config_valid = validate_input_folder(paths, skip_calibration_folder=False)
 
+    # drop the gage- syntax used in other tools
+    if args.gage:
+        args.gage = args.gage.split("-")[-1]
     if not config_valid or args.force:
         create_calibration_config(args.data_folder, args.gage, args.iterations)
 
     if args.run:
         logging.info(f"Starting calibration run at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         run_calibration(args.data_folder)
+
+    print(paths.calibrated_realization)
+    if paths.calibrated_realization.exists():
+        logging.info(f"Calibrated realization found: {paths.calibrated_realization}")
+        copy_best_params(paths.template_realization, paths.calibrated_realization)
 
 
 if __name__ == "__main__":
