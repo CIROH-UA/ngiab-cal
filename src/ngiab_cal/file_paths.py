@@ -39,6 +39,7 @@ class FilePaths:
             folder_name (str): Water body ID.
             output_folder (Path): Path to the folder you want to output to
         """
+        data_folder = data_folder.resolve()
         if not data_folder.exists():
             raise FileNotFoundError(f"Unable to find {data_folder}")
         self.data_folder = data_folder
