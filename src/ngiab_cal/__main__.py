@@ -239,7 +239,7 @@ def main():
         action="store_true",
     )
     parser.add_argument(
-        "-i", "--iterations", help="number of iterations to calibrate for", type=int
+        "-i", "--iterations", help="number of iterations to calibrate for", type=int, default=100
     )
     args = parser.parse_args()
     paths = FilePaths(args.data_folder)
@@ -256,7 +256,6 @@ def main():
         logging.info(f"Starting calibration run at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         run_calibration(args.data_folder)
 
-    print(paths.calibrated_realization)
     if paths.calibrated_realization.exists():
         logging.info(f"Calibrated realization found: {paths.calibrated_realization}")
         copy_best_params(paths.template_realization, paths.calibrated_realization)
