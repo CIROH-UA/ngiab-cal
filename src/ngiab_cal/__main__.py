@@ -66,7 +66,7 @@ def get_start_end_times(realization_path: Path) -> tuple[datetime, datetime]:
     total_range = end - start
     # 2 year minimum suggested to allow for a 12 month warm up
     if total_range.days < 730:
-        logger.warning(
+        logging.warning(
             "Time range is less than 2 years, this may not be enough data for calibration"
         )
     return start, end
@@ -85,7 +85,7 @@ def write_usgs_data_to_csv(start: datetime, end: datetime, gage_id: str, output_
     if data.empty:
         raise ValueError(f"Unable to find usgs observation for {gage_id} between {start} and {end}")
 
-    data = data[["value_time", "value"]]
+    data = data.filter(["value_time", "value"])
     data.columns = ["value_date", "obs_flow"]
     # usgs data is in ft3/s, ngen-cal converts to m3/s without checking so LEAVE IT AS ft3/s
     data.to_csv(output_file, index=False)
@@ -102,14 +102,12 @@ def write_ngen_cal_config(
         warm_up = timedelta(days=365)
     # evaluation starts at the end of the warm up period
     # Validation not currently working so just set the values the same as eval
-    evaluation_start = validation_start = start + warm_up
-    evaluation_end = validation_end = end
-
+    evaluation_start = start + warm_up
     # ends after half the remaining time
-    # evaluation_end = end - ((total_range - warm_up) / 2)
-    # # validation starts at the end of the evaluation period
-    # validation_start = evaluation_end
-    # validation_end = end
+    evaluation_end = end - ((total_range - warm_up) / 2)
+    # validation starts at the end of the evaluation period
+    validation_start = evaluation_end
+    validation_end = end
 
     with open(FilePaths.template_ngiab_cal_conf, "r") as f:
         template = f.read()
