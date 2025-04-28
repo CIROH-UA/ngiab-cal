@@ -12,7 +12,7 @@ import pandas as pd
 from aiohttp.client_exceptions import ContentTypeError
 from hydrotools.nwis_client import IVDataService
 
-from ngiab_cal.custom_logging import setup_logging
+from ngiab_cal.custom_logging import set_log_level, setup_logging
 from ngiab_cal.file_paths import FilePaths, validate_input_folder
 
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
@@ -95,10 +95,10 @@ def write_ngen_cal_config(
     data_folder: FilePaths, gage_id: str, start: datetime, end: datetime, iterations: int
 ) -> None:
     logging.info("Writing ngiab-cal configuration")
-    total_range = start - end
+    total_range = abs(start - end)
     # warm up is half the range, capped at 365 days
     warm_up = timedelta(days=(total_range.days / 2))
-    if warm_up.days < 365:
+    if warm_up.days > 365:
         warm_up = timedelta(days=365)
     # evaluation starts at the end of the warm up period
     # Validation not currently working so just set the values the same as eval
@@ -109,6 +109,18 @@ def write_ngen_cal_config(
     validation_start = evaluation_end
     validation_end = end
 
+    # debug all the times
+    logging.debug("start {}".format(start))
+    logging.debug("end {}".format(end))
+    logging.debug("Total range: {}".format(total_range))
+    logging.debug("Warm up: {}".format(warm_up))
+    logging.debug("Evaluation start: {}".format(evaluation_start))
+    logging.debug("Evaluation end: {}".format(evaluation_end))
+    logging.debug("Validation start: {}".format(validation_start))
+    logging.debug("Validation end: {}".format(validation_end))
+
+    plot_frequency = min(50, iterations)
+
     with open(FilePaths.template_ngiab_cal_conf, "r") as f:
         template = f.read()
 
@@ -116,6 +128,7 @@ def write_ngen_cal_config(
         file.write(
             template.format(
                 iterations=iterations,
+                plot_frequency=plot_frequency,
                 subset_hydrofabric=data_folder.geopackage_path.name,
                 evaluation_start=evaluation_start.strftime(TIME_FORMAT),
                 evaluation_stop=evaluation_end.strftime(TIME_FORMAT),
@@ -148,8 +161,8 @@ def create_calibration_config(data_folder: Path, gage_id: str, iterations: int =
     # first pass at this so I'm probably not using ngen-cal properly
     # for now keep it simple and only allow single gage lumped calibration
 
-    # This initialization also checks all the files we need exist
     logging.info("Validating input files")
+    # This initialization also checks all the files we need exist
     files = FilePaths(data_folder)
     if not gage_id:
         gage_id = pick_gage_to_calibrate(files.geopackage_path)
@@ -173,7 +186,9 @@ def create_calibration_config(data_folder: Path, gage_id: str, iterations: int =
     write_ngen_cal_config(files, gage_id, start, end, iterations)
 
     logging.warning("This is still experimental, run the following command to start calibration:")
-    logging.warning(f'docker run -it -v "{files.data_folder}:/ngen/ngen/data" joshcu/ngiab-cal')
+    logging.warning(
+        f'docker run -it -v "{files.data_folder}:/ngen/ngen/data" --user $(id -u):$(id -g) joshcu/ngiab-cal'
+    )
 
 
 def run_calibration(folder_to_run: Path) -> None:
@@ -239,7 +254,11 @@ def main():
     parser.add_argument(
         "-i", "--iterations", help="number of iterations to calibrate for", type=int, default=100
     )
+    parser.add_argument("--debug", help="enable debug logging", action="store_true")
+
     args = parser.parse_args()
+    if args.debug:
+        set_log_level(logging.DEBUG)
     paths = FilePaths(args.data_folder)
     logging.info(f"Searching for calibration files in {paths.calibration_folder}")
     config_valid = validate_input_folder(paths, skip_calibration_folder=False)

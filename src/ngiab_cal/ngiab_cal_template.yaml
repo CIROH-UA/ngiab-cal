@@ -107,7 +107,7 @@ model:
     full_eval_end_time: "{full_eval_end_time}"
     save_output_iteration: 0
     save_plot_iteration: 0
-    save_plot_iter_freq: 50
+    save_plot_iter_freq: {plot_frequency}
     basinID: {gage_id}
     threshold: null
     site_name: "USGS {gage_id}: "

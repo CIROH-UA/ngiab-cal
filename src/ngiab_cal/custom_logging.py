@@ -23,8 +23,20 @@ class ColoredFormatter(logging.Formatter):
 def setup_logging() -> None:
     """Set up logging configuration with green formatting."""
     handler = logging.StreamHandler()
-    handler.setFormatter(ColoredFormatter("%(levelname)s - %(message)s"))
+    handler.setFormatter(ColoredFormatter("%(levelname)s - %(name)s - %(module)s - %(message)s"))
     logging.basicConfig(level=logging.INFO, handlers=[handler])
+    # set aiohttp to info because it's NOTSET by default
+    # an extremely helpful tool https://pypi.org/project/logging-tree/
+    logging.getLogger("aiohttp").setLevel(logging.INFO)
+    logging.getLogger("aiohttp_client_cache").setLevel(logging.INFO)
+    logging.getLogger("aiosqlite").setLevel(logging.INFO)
+    logging.getLogger("asyncio").setLevel(logging.INFO)
+    logging.getLogger("concurrent").setLevel(logging.INFO)
+
+
+def set_log_level(log_level: int) -> None:
+    logger = logging.getLogger("root")
+    logger.setLevel(log_level)
 
 
 def set_logging_to_critical_only() -> None:

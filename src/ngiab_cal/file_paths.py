@@ -2,8 +2,6 @@ import glob
 import logging
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
-
 
 def search_for_file(expected_file: Path, search_glob: str) -> Path:
     if (expected_file).exists():
@@ -43,7 +41,7 @@ class FilePaths:
         if not data_folder.exists():
             raise FileNotFoundError(f"Unable to find {data_folder}")
         self.data_folder = data_folder
-        validate_input_folder(self, skip_calibration_folder=True)
+        validate_input_folder(self, skip_calibration_folder=True, log_level=logging.ERROR)
 
     @property
     def calibration_folder(self) -> Path:
@@ -99,12 +97,14 @@ class FilePaths:
         return self.calibration_folder / "Output" / "Validation_Run" / "realization.json"
 
 
-def validate_input_folder(data_folder: FilePaths, skip_calibration_folder: bool = True) -> bool:
+def validate_input_folder(
+    data_folder: FilePaths, skip_calibration_folder: bool = True, log_level: int = logging.WARN
+) -> bool:
     """
     Checks all the file and folders required for calibration are present.
     Loops over all properties of an object that return a path and checks that they exist.
     """
-    skip_attrs = ["best_realization"]
+    skip_attrs = ["best_realization", "hydrotools_cache"]
     data_folder.calibration_folder.mkdir(exist_ok=True)
     missing_paths = list()
     for attr_name in dir(data_folder):
@@ -127,7 +127,7 @@ def validate_input_folder(data_folder: FilePaths, skip_calibration_folder: bool 
         return True
     else:
         for missing_path in missing_paths:
-            logger.error(missing_path)
+            logging.log(log_level, missing_path)
         return False
 
 
