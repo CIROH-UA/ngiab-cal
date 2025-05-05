@@ -1,4 +1,3 @@
-import argparse
 import json
 import logging
 import sqlite3
@@ -12,10 +11,17 @@ import pandas as pd
 from aiohttp.client_exceptions import ContentTypeError
 from hydrotools.nwis_client import IVDataService
 
+from ngiab_cal.arguments import (
+    CALIBRATION_VALIDATION_RATIO,
+    ITERATIONS_DEFAULT,
+    WARMUP_DEFAULT,
+    get_arg_parser,
+)
 from ngiab_cal.custom_logging import set_log_level, setup_logging
-from ngiab_cal.file_paths import FilePaths, validate_input_folder
+from ngiab_cal.file_paths import FilePaths, validate_calibration_files, validate_run_files
 
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
 
 # hide IVDataService warning so we can show our own
 warnings.filterwarnings("ignore", message="No data was returned by the request.")
@@ -92,19 +98,32 @@ def write_usgs_data_to_csv(start: datetime, end: datetime, gage_id: str, output_
 
 
 def write_ngen_cal_config(
-    data_folder: FilePaths, gage_id: str, start: datetime, end: datetime, iterations: int
+    data_folder: FilePaths,
+    gage_id: str,
+    start: datetime,
+    end: datetime,
+    iterations: int,
+    warm_up: int,
+    calibration_ratio: float,
 ) -> None:
     logging.info("Writing ngiab-cal configuration")
     total_range = abs(start - end)
     # warm up is half the range, capped at 365 days
-    warm_up = timedelta(days=(total_range.days / 2))
-    if warm_up.days > 365:
-        warm_up = timedelta(days=365)
-    # evaluation starts at the end of the warm up period
+    warm_up_period = timedelta(days=warm_up)
+    if warm_up_period > total_range:
+        logging.error(
+            f"Warm up period {warm_up_period} days is longer that the total range to be simulated {total_range} "
+        )
     # Validation not currently working so just set the values the same as eval
-    evaluation_start = start + warm_up
+    # round to the nearest day so we don't get strange intervals ngen isn't expecting
+    calibration_days = ((total_range - warm_up_period) * calibration_ratio).days
+    calibration_td = timedelta(days=calibration_days)
+    evaluation_start = start + warm_up_period
     # ends after half the remaining time
-    evaluation_end = end - ((total_range - warm_up) / 2)
+    if calibration_ratio == 0:
+        evaluation_end = end
+    else:
+        evaluation_end = evaluation_start + calibration_td
     # validation starts at the end of the evaluation period
     validation_start = evaluation_end
     validation_end = end
@@ -114,6 +133,8 @@ def write_ngen_cal_config(
     logging.debug("end {}".format(end))
     logging.debug("Total range: {}".format(total_range))
     logging.debug("Warm up: {}".format(warm_up))
+    logging.debug("Calibration Days: {}".format(calibration_days))
+    logging.debug("Validation Days: {}".format(abs(validation_start - validation_end).days))
     logging.debug("Evaluation start: {}".format(evaluation_start))
     logging.debug("Evaluation end: {}".format(evaluation_end))
     logging.debug("Validation start: {}".format(validation_start))
@@ -157,13 +178,22 @@ def pick_gage_to_calibrate(hydrofabric: Path) -> str:
         return input(f"Select a gage to calibrate from {gages}: ")
 
 
-def create_calibration_config(data_folder: Path, gage_id: str, iterations: int = 100) -> None:
+def create_calibration_config(
+    data_folder: Path,
+    gage_id: str,
+    iterations: int = ITERATIONS_DEFAULT,
+    warmup_days: int = WARMUP_DEFAULT,
+    calib_ratio: float = CALIBRATION_VALIDATION_RATIO,
+) -> None:
     # first pass at this so I'm probably not using ngen-cal properly
     # for now keep it simple and only allow single gage lumped calibration
 
     logging.info("Validating input files")
     # This initialization also checks all the files we need exist
     files = FilePaths(data_folder)
+
+    files.calibration_folder.mkdir(exist_ok=True)
+
     if not gage_id:
         gage_id = pick_gage_to_calibrate(files.geopackage_path)
 
@@ -183,11 +213,11 @@ def create_calibration_config(data_folder: Path, gage_id: str, iterations: int =
     copy_and_convert_paths_to_absolute(files.template_troute, files.calibration_troute)
 
     # create the dates for the ngen-cal config
-    write_ngen_cal_config(files, gage_id, start, end, iterations)
+    write_ngen_cal_config(files, gage_id, start, end, iterations, warmup_days, calib_ratio)
 
     logging.warning("This is still experimental, run the following command to start calibration:")
     logging.warning(
-        f'docker run -it -v "{files.data_folder}:/ngen/ngen/data" --user $(id -u):$(id -g) joshcu/ngiab-cal'
+        f'docker run -it -v "{files.data_folder}:/ngen/ngen/data" --user $(id -u):$(id -g) joshcu/ngiab-cal:demo'
     )
 
 
@@ -198,7 +228,7 @@ def run_calibration(folder_to_run: Path) -> None:
         logging.error("Docker is not running, please start Docker and try again.")
     logging.warning("Beginning calibration...")
     try:
-        command = f'docker run --rm -it -v "{str(folder_to_run)}:/ngen/ngen/data" --user $(id -u):$(id -g) joshcu/ngiab-cal /calibration/run.sh'
+        command = f'docker run --rm -it -v "{str(folder_to_run)}:/ngen/ngen/data" --user $(id -u):$(id -g) joshcu/ngiab-cal:demo /calibration/run.sh'
         subprocess.run(command, shell=True)
         logging.info("Calibration complete.")
     except:
@@ -210,7 +240,7 @@ def copy_best_params(realization: Path, calibrated_realization: Path) -> None:
         logging.error(
             f"Realization path {realization} or calibrated realization path {calibrated_realization} does not exist."
         )
-    logging.info(
+    logging.debug(
         f"Extracting model parameters from calibrated realization: {calibrated_realization}"
     )
     with open(realization) as f:
@@ -229,45 +259,40 @@ def copy_best_params(realization: Path, calibrated_realization: Path) -> None:
             if old_module["params"]["model_type_name"] == new_module["params"]["model_type_name"]:
                 old_module["params"]["model_params"] = new_module["params"]["model_params"]
 
-    logging.info(f"Copying model parameters into {realization}")
+    logging.info(
+        f"Copying model parameters from calibrated realization {calibrated_realization} into {realization}"
+    )
     with open(realization, "w") as f:
         json.dump(uncalibrated, f, indent=4)
 
 
 def main():
     setup_logging()
-    parser = argparse.ArgumentParser(description="Create a calibration config for ngen-cal")
-    parser.add_argument(
-        "data_folder",
-        type=Path,
-        help="Path to the folder you wish to calibrate",
-    )
-    parser.add_argument("-g", "--gage", type=str, help="Gage ID to use for calibration")
-    parser.add_argument(
-        "-f", "--force", help="Overwrite existing configuration", action="store_true"
-    )
-    parser.add_argument(
-        "--run",
-        help="Try to automatically run the calibration, this may be unstable",
-        action="store_true",
-    )
-    parser.add_argument(
-        "-i", "--iterations", help="number of iterations to calibrate for", type=int, default=100
-    )
-    parser.add_argument("--debug", help="enable debug logging", action="store_true")
+    args = get_arg_parser().parse_args()
 
-    args = parser.parse_args()
     if args.debug:
         set_log_level(logging.DEBUG)
     paths = FilePaths(args.data_folder)
-    logging.info(f"Searching for calibration files in {paths.calibration_folder}")
-    config_valid = validate_input_folder(paths, skip_calibration_folder=False)
+
+    data_folder_valid = validate_run_files(paths, log_level=logging.ERROR)
+
+    if not data_folder_valid:
+        return
+
+    logging.debug(f"Searching for calibration files in {paths.calibration_folder}")
+    config_valid = validate_calibration_files(paths, log_level=logging.NOTSET)
+    if not config_valid and paths.calibration_folder.exists():
+        # e.g. if there are missing config files and this isn't the first run
+        # warn that there are files missing
+        validate_calibration_files(paths, log_level=logging.WARN)
 
     # drop the gage- syntax used in other tools
     if args.gage:
         args.gage = args.gage.split("-")[-1]
     if not config_valid or args.force:
-        create_calibration_config(args.data_folder, args.gage, args.iterations)
+        create_calibration_config(
+            args.data_folder, args.gage, args.iterations, args.warmup, args.calibration_ratio
+        )
 
     if args.run:
         logging.info(f"Starting calibration run at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")

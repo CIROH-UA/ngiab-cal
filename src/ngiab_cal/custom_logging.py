@@ -16,14 +16,14 @@ class ColoredFormatter(logging.Formatter):
         if record.levelno == logging.CRITICAL or record.levelno == logging.ERROR:
             return f"{Fore.RED}{message}{Style.RESET_ALL}"
         if record.name == "root":  # Only color info messages from this script green
-            return f"{Fore.GREEN}{message}{Style.RESET_ALL}"
+            return f"{Fore.GREEN}{message.split(' - ')[0]}{Style.RESET_ALL} - {message.split(' - ')[1]}"
         return message
 
 
 def setup_logging() -> None:
     """Set up logging configuration with green formatting."""
     handler = logging.StreamHandler()
-    handler.setFormatter(ColoredFormatter("%(levelname)s - %(name)s - %(module)s - %(message)s"))
+    handler.setFormatter(ColoredFormatter("%(levelname)s - %(message)s"))
     logging.basicConfig(level=logging.INFO, handlers=[handler])
     # set aiohttp to info because it's NOTSET by default
     # an extremely helpful tool https://pypi.org/project/logging-tree/

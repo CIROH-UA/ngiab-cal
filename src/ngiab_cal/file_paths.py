@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 
 
-def search_for_file(expected_file: Path, search_glob: str) -> Path:
+def _search_for_file(expected_file: Path, search_glob: str) -> Path:
     if (expected_file).exists():
         return expected_file
     files_found = glob.glob(search_glob, root_dir=expected_file.parent, recursive=True)
@@ -19,6 +19,27 @@ def search_for_file(expected_file: Path, search_glob: str) -> Path:
             raise FileExistsError(
                 f"too many files matching {search_glob}, found {num_files} in {expected_file.parent}"
             )
+
+
+def _validate_files(paths: list[Path], log_level: int = logging.WARN):
+    missing_paths = []
+    for path in paths:
+        try:
+            if not path.exists():
+                raise FileNotFoundError(f"unable to locate {path}")
+        except FileNotFoundError as e:
+            missing_paths.append(f"{str(e)}")
+        except FileExistsError as e:
+            missing_paths.append(f"{str(e)}")
+
+    if len(missing_paths) == 0:
+        return True
+    else:
+        if log_level == logging.NOTSET:
+            return False
+        for missing_path in missing_paths:
+            logging.log(log_level, missing_path)
+        return False
 
 
 class FilePaths:
@@ -41,7 +62,7 @@ class FilePaths:
         if not data_folder.exists():
             raise FileNotFoundError(f"Unable to find {data_folder}")
         self.data_folder = data_folder
-        validate_input_folder(self, skip_calibration_folder=True, log_level=logging.ERROR)
+        # validate_input_folder(self, skip_calibration_folder=True, log_level=logging.ERROR)
 
     @property
     def calibration_folder(self) -> Path:
@@ -58,19 +79,15 @@ class FilePaths:
     @property
     def geopackage_path(self) -> Path:
         expected_file = self.config_folder / f"{self.data_folder.stem}_subset.gpkg"
-        return search_for_file(expected_file, search_glob="**/*.gpkg")
-
-    @property
-    def best_realization(self) -> Path:
-        return self.config_folder / "calibrated.json"
+        return _search_for_file(expected_file, search_glob="**/*.gpkg")
 
     @property
     def template_realization(self) -> Path:
-        return search_for_file(self.config_folder / "realization.json", "**/real*.json")
+        return _search_for_file(self.config_folder / "realization.json", "**/real*.json")
 
     @property
     def template_troute(self) -> Path:
-        return search_for_file(self.config_folder / "troute.yaml", "**/*rout*.yaml")
+        return _search_for_file(self.config_folder / "troute.yaml", "**/*rout*.yaml")
 
     @property
     def calibration_realization(self) -> Path:
@@ -97,40 +114,23 @@ class FilePaths:
         return self.calibration_folder / "Output" / "Validation_Run" / "realization.json"
 
 
-def validate_input_folder(
-    data_folder: FilePaths, skip_calibration_folder: bool = True, log_level: int = logging.WARN
-) -> bool:
-    """
-    Checks all the file and folders required for calibration are present.
-    Loops over all properties of an object that return a path and checks that they exist.
-    """
-    skip_attrs = ["best_realization", "hydrotools_cache"]
-    data_folder.calibration_folder.mkdir(exist_ok=True)
-    missing_paths = list()
-    for attr_name in dir(data_folder):
-        # Skip private attributes and methods
-        if attr_name.startswith("_") or attr_name in skip_attrs:
-            continue
-
-        try:
-            # Check if it's a property that returns a path-like object
-            path = getattr(data_folder, attr_name)
-            if isinstance(path, (Path)) and not callable(path):
-                if skip_calibration_folder and path.is_relative_to(data_folder.calibration_folder):
-                    continue
-                if not path.exists():
-                    raise FileNotFoundError(f"unable to locate {attr_name} at {path}")
-        except Exception as e:
-            # Handle any exceptions (e.g., if a property raises an error)
-            missing_paths.append(f"{str(e)}")
-    if len(missing_paths) == 0:
-        return True
-    else:
-        for missing_path in missing_paths:
-            logging.log(log_level, missing_path)
-        return False
+def validate_run_files(self, log_level: int = logging.WARN) -> bool:
+    required_run_files = [
+        self.config_folder,
+        self.forcings_folder,
+        self.geopackage_path,
+        self.template_realization,
+        self.template_troute,
+    ]
+    return _validate_files(required_run_files, log_level)
 
 
-# if __name__ == "__main__":
-#     # test = file_paths(Path())
-#     test = file_paths(Path("/mnt/raid0/cal_testing/gage-10154200"))
+def validate_calibration_files(self, log_level: int = logging.WARN) -> bool:
+    required_calibration_files = [
+        self.calibration_realization,
+        self.calibration_troute,
+        self.calibration_config,
+        self.crosswalk,
+        self.observed_discharge,
+    ]
+    return _validate_files(required_calibration_files, log_level)
