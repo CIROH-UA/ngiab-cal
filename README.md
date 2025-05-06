@@ -1,6 +1,6 @@
 # ngiab-cal
 
-A Python CLI tool to simplify hydrologic model calibration for Next Generation In-A-Box (NGIAB) workflows.
+A Python CLI tool to simplify hydrologic model calibration for NextGen In A Box (NGIAB) workflows.
 
 ## Table of Contents
 - [What is this?](#what-is-this)
@@ -241,5 +241,5 @@ of the Software outside of the United States."
 
 ## Acknowledgments
 
-- [CIROH](https://docs.ciroh.org/) for Next Generation In-A-Box
+- [CIROH](https://docs.ciroh.org/) for NextGen In A Box
 - [NGEN-CAL](https://github.com/NOAA-OWP/ngen-cal) developers
