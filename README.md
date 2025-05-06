@@ -23,9 +23,6 @@ ngiab-cal is a utility that works with the [NGIAB folder structure](https://docs
 
 The tool simplifies these key tasks:
 - Creating calibration configurations
-- Downloading USGS streamflow data
-- Generating crosswalk files for gage mapping
-- Converting relative paths to absolute paths for compatibility
 - Running the calibration process using Docker
 - Copying calibrated parameters back to your model configuration
 
@@ -154,7 +151,7 @@ general:
 ```
 
 ### Model Parameters
-The file defines parameters for both CFE (Conceptual Functional Equivalent) and NoahOWP (Noah One Water Protocol) hydrologic models:
+The file defines parameters for both CFE (Conceptual Functional Equivalent) and Noah-OWP-Modular (an extended, refactored version of the Noah-MP land surface model) hydrologic models:
 
 ```yaml
 CFE:
@@ -200,7 +197,7 @@ These time periods follow the calibration process diagram shown earlier, with se
 
 ## How is ngen-cal running?
 
-The tool uses a custom branch of CIROH-UA/ngen-cal called `ngiab_cal`. This branch contains:
+The tool uses a custom [branch of CIROH-UA/ngen-cal](https://github.com/CIROH-UA/ngen-cal/tree/ngiab_cal) called `ngiab_cal`. This branch contains:
 - A modified version of ngen-cal
 - A Dockerfile that builds on top of the Next Gen In-A-Box container
 - Installation of ngen-cal inside the container
