@@ -223,7 +223,7 @@ def create_calibration_config(
 
 def run_calibration(folder_to_run: Path) -> None:
     try:
-        subprocess.run("docker pull joshcu/ngiab-cal", shell=True)
+        subprocess.run("docker pull joshcu/ngiab-cal:demo", shell=True)
     except:
         logging.error("Docker is not running, please start Docker and try again.")
     logging.warning("Beginning calibration...")
