@@ -286,6 +286,10 @@ def main():
         # warn that there are files missing
         validate_calibration_files(paths, log_level=logging.WARN)
 
+    if config_valid and not args.force:
+        logging.warning(
+            "Existing calibration configuration found, use -f or --force to overwrite existing calibration settings"
+        )
     # drop the gage- syntax used in other tools
     if args.gage:
         args.gage = args.gage.split("-")[-1]
