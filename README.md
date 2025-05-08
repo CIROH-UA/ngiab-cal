@@ -30,7 +30,7 @@ The tool simplifies these key tasks:
 
 Several installation options are available:
 
-### Using `uvx` (recommended)
+### Using `uvx` (recommended: for its speed,and efficient environment management)
 ```bash
 # Run directly without installation
 uvx ngiab-cal --help
@@ -103,12 +103,12 @@ options:
 
 ## Calibration Process
 
-The tool applies a standard calibration workflow:
+The tool applies a standard hydrological modeling workflow, which involves warmup, calibration, and validation periods. The --warmup period is crucial for allowing the model to reach a stable state before its performance is evaluated against observed data. Following the warmup, the remaining period is typically divided into calibration (where model parameters are adjusted to match observations) and validation (where the model's performance with the calibrated parameters is tested on an independent dataset). The tool facilitates this split, as detailed in the diagram and options below. 
 
 ```
 Default calibration settings on a 5 year period
 |   year 1   |   year 2   |   year 3   |   year 4   |   year 5   |
-|<- warmup ->|<-     calibration     ->|      no simulation      |
+|<- warmup ->|<-     calibration     ->|                         |
 |<-             warmup               ->|<-      validation     ->|
 ```
 
@@ -240,6 +240,6 @@ a royalty-free, nonexclusive license to use, copy, and create derivative works
 of the Software outside of the United States."
 
 ## Acknowledgments
-
+ 
 - [CIROH](https://docs.ciroh.org/) for NextGen In A Box
 - [NGEN-CAL](https://github.com/NOAA-OWP/ngen-cal) developers
