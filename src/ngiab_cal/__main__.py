@@ -21,6 +21,7 @@ from ngiab_cal.custom_logging import set_log_level, setup_logging
 from ngiab_cal.file_paths import FilePaths, validate_calibration_files, validate_run_files
 
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+DOCKER_IMAGE_NAME = "awiciroh/ngiab-cal:devcon25"
 
 
 # hide IVDataService warning so we can show our own
@@ -215,22 +216,22 @@ def create_calibration_config(
     # create the dates for the ngen-cal config
     write_ngen_cal_config(files, gage_id, start, end, iterations, warmup_days, calib_ratio)
 
-    logging.warning("This is still experimental, run the following command to start calibration:")
-    logging.warning(
-        f'docker run -it -v "{files.data_folder.resolve()}:/ngen/ngen/data" --user $(id -u):$(id -g) joshcu/ngiab-cal:demo'
+
+def print_run_command(folder_to_run: Path) -> None:
+    logging.info("This is still experimental, run the following command to start calibration:")
+    logging.info(
+        f'docker run -it -v "{folder_to_run.resolve()}:/ngen/ngen/data" {DOCKER_IMAGE_NAME}'
     )
 
 
 def run_calibration(folder_to_run: Path) -> None:
     try:
-        subprocess.run("docker pull joshcu/ngiab-cal:demo", shell=True)
+        subprocess.run(f"docker pull {DOCKER_IMAGE_NAME}", shell=True)
     except:
         logging.error("Docker is not running, please start Docker and try again.")
     logging.warning("Beginning calibration...")
     try:
-        command = f'docker run --rm -it -v "{str(folder_to_run.resolve())}:/ngen/ngen/data" --user $(id -u):$(id -g) joshcu/ngiab-cal:demo /calibration/run.sh'
-        print(command)
-        raise
+        command = f'docker run --rm -it -v "{str(folder_to_run.resolve())}:/ngen/ngen/data" {DOCKER_IMAGE_NAME} /calibration/run.sh'
         subprocess.run(command, shell=True)
         logging.info("Calibration complete.")
     except:
@@ -303,6 +304,10 @@ def main():
     if args.run:
         logging.info(f"Starting calibration run at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         run_calibration(args.data_folder)
+
+    config_valid = validate_calibration_files(paths, log_level=logging.NOTSET)
+    if config_valid:
+        print_run_command(args.data_folder)
 
     if paths.calibrated_realization.exists():
         logging.info(f"Calibrated realization found: {paths.calibrated_realization}")
