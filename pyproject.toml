@@ -1,10 +1,19 @@
 [project]
 name = "ngiab-cal"
-version = "0.2.2"
+version = "0.3.0"
 description = "A Python CLI tool to simplify hydrologic model calibration for NextGen In A Box (NGIAB) workflows."
 readme = "README.md"
 requires-python = ">=3.11"
-keywords = ["NGIAB", "NextGen", "hydrologcal modeling", "model calibration", "ngen-cal", "CFE", "Noah-OWP", "Docker"]
+keywords = [
+    "NGIAB",
+    "NextGen",
+    "hydrologcal modeling",
+    "model calibration",
+    "ngen-cal",
+    "CFE",
+    "Noah-OWP",
+    "Docker",
+]
 dependencies = [
     "aiohttp>=3.11.16",
     "colorama>=0.4.6",
