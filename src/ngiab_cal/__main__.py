@@ -217,7 +217,7 @@ def create_calibration_config(
 
     logging.warning("This is still experimental, run the following command to start calibration:")
     logging.warning(
-        f'docker run -it -v "{files.data_folder}:/ngen/ngen/data" --user $(id -u):$(id -g) joshcu/ngiab-cal:demo'
+        f'docker run -it -v "{files.data_folder.resolve()}:/ngen/ngen/data" --user $(id -u):$(id -g) joshcu/ngiab-cal:demo'
     )
 
 
@@ -228,7 +228,9 @@ def run_calibration(folder_to_run: Path) -> None:
         logging.error("Docker is not running, please start Docker and try again.")
     logging.warning("Beginning calibration...")
     try:
-        command = f'docker run --rm -it -v "{str(folder_to_run)}:/ngen/ngen/data" --user $(id -u):$(id -g) joshcu/ngiab-cal:demo /calibration/run.sh'
+        command = f'docker run --rm -it -v "{str(folder_to_run.resolve())}:/ngen/ngen/data" --user $(id -u):$(id -g) joshcu/ngiab-cal:demo /calibration/run.sh'
+        print(command)
+        raise
         subprocess.run(command, shell=True)
         logging.info("Calibration complete.")
     except:

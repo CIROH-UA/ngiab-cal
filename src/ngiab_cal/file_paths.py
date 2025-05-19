@@ -14,7 +14,7 @@ def _search_for_file(expected_file: Path, search_glob: str) -> Path:
                 f"unable to find any files matching {search_glob} in {expected_file.parent}"
             )
         case 1:
-            return Path(files_found[0])
+            return expected_file.parent / Path(files_found[0])
         case _:
             raise FileExistsError(
                 f"too many files matching {search_glob}, found {num_files} in {expected_file.parent}"
