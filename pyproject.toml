@@ -1,6 +1,6 @@
 [project]
 name = "ngiab-cal"
-version = "0.3.0"
+version = "0.3.1"
 description = "A Python CLI tool to simplify hydrologic model calibration for NextGen In A Box (NGIAB) workflows."
 readme = "README.md"
 requires-python = ">=3.11"
