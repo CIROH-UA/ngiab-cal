@@ -94,7 +94,8 @@ def write_usgs_data_to_csv(start: datetime, end: datetime, gage_id: str, output_
 
     data = data.filter(["value_time", "value"])
     data.columns = ["value_date", "obs_flow"]
-    # usgs data is in ft3/s, ngen-cal converts to m3/s without checking so LEAVE IT AS ft3/s
+    data["obs_flow"] = data["obs_flow"].astype(float)
+    data["obs_flow"] = data["obs_flow"] * 0.028316847
     data.to_csv(output_file, index=False)
 
 

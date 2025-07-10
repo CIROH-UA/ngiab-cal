@@ -107,7 +107,7 @@ class FilePaths:
 
     @property
     def observed_discharge(self) -> Path:
-        return self.calibration_folder / "obs_hourly_discharge.csv"
+        return self.calibration_folder / "obs_hourly_discharge_cms.csv"
 
     @property
     def calibrated_realization(self) -> Path:
