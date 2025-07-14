@@ -90,7 +90,7 @@ model:
   catchments: /ngen/ngen/data/config/{subset_hydrofabric}
   nexus: /ngen/ngen/data/config/{subset_hydrofabric}
   crosswalk: /ngen/ngen/data/calibration/crosswalk.json
-  obsflow: /ngen/ngen/data/calibration/obs_hourly_discharge.csv
+  obsflow: /ngen/ngen/data/calibration/obs_hourly_discharge_cms.csv
   strategy: uniform
   params:
     CFE: *id001
