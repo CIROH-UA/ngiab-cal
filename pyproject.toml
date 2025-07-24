@@ -19,6 +19,7 @@ dependencies = [
     "colorama>=0.4.6",
     "hydrotools-nwis-client>=4.1.0",
     "pandas>=2.2.3",
+    "rich>=14.0.0",
 ]
 
 [project.scripts]
