@@ -1,6 +1,6 @@
 [project]
 name = "ngiab-cal"
-version = "0.3.2"
+version = "0.3.3"
 description = "A Python CLI tool to simplify hydrologic model calibration for NextGen In A Box (NGIAB) workflows."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -24,6 +24,11 @@ dependencies = [
 
 [project.scripts]
 ngiab-cal = "ngiab_cal.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/CIROH-UA/ngiab-cal"
+Issues = "https://github.com/CIROH-UA/ngiab-cal/issues"
+
 
 [dependency-groups]
 dev = ["ruff>=0.11.6"]
