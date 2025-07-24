@@ -10,6 +10,7 @@ from pathlib import Path
 import pandas as pd
 from aiohttp.client_exceptions import ContentTypeError
 from hydrotools.nwis_client import IVDataService
+from rich.prompt import Prompt
 
 from ngiab_cal.arguments import (
     CALIBRATION_VALIDATION_RATIO,
@@ -21,7 +22,7 @@ from ngiab_cal.custom_logging import set_log_level, setup_logging
 from ngiab_cal.file_paths import FilePaths, validate_calibration_files, validate_run_files
 
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
-DOCKER_IMAGE_NAME = "awiciroh/ngiab-cal:devcon25"
+DOCKER_IMAGE_NAME = "awiciroh/ngiab-cal:latest"
 
 
 # hide IVDataService warning so we can show our own
@@ -294,6 +295,16 @@ def main():
         logging.warning(
             "Existing calibration configuration found, use -f or --force to overwrite existing calibration settings"
         )
+        if args.run:
+            response = Prompt.ask(
+                "Your current settings may not have been applied, do you still want to run?",
+                default="n",
+                choices=["y", "n"],
+            )
+            if response != "y":
+                logging.info("Calibration run cancelled")
+                return
+
     # drop the gage- syntax used in other tools
     if args.gage:
         args.gage = args.gage.split("-")[-1]
