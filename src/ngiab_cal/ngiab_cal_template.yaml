@@ -15,25 +15,25 @@ CFE: &id001
     max: 15.0
     init: 4.05
   - name: satpsi
-    min: 0.03
+    min: 0.036
     max: 0.955
     init: 0.355
   - name: satdk
-    min: 1.0e-07
-    max: 0.000726
+    min: 1.95e-07
+    max: 1.41e-3
     init: 3.38e-06
   - name: maxsmc
     min: 0.16
-    max: 0.59
+    max: 0.58
     init: 0.439
-  - name: refkdt
-    min: 0.1
-    max: 4.0
-    init: 1.0
+  # - name: refkdt no longer calibrated, set to 3
+  #   min: 0.1
+  #   max: 4.0
+  #   init: 1.0
   - name: slope
-    min: 0.0
+    min: 5.98e-5
     max: 1.0
-    init: 0.1
+    init: 0.05
   - name: max_gw_storage
     min: 0.01
     max: 0.25
@@ -58,7 +58,7 @@ NoahOWP: &id002
   - name: RSURF_EXP
     min: 1.0
     max: 6.0
-    init: 5.0
+    init: 4.84
   - name: CWP
     min: 0.09
     max: 0.36
@@ -66,7 +66,7 @@ NoahOWP: &id002
   - name: MP
     min: 3.6
     max: 12.6
-    init: 9.0
+    init: 9.7
   - name: VCMX25
     min: 24.0
     max: 112.0
@@ -78,11 +78,11 @@ NoahOWP: &id002
   - name: RSURF_SNOW
     min: 0.136
     max: 100.0
-    init: 50.0
+    init: 49.2
   - name: SCAMAX
     min: 0.7
     max: 1.0
-    init: 0.9
+    init: 0.89
 model:
   type: ngen
   binary: /dmod/bin/mpi-ngen
