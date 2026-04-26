@@ -224,6 +224,10 @@ def print_run_command(folder_to_run: Path) -> None:
     logging.info(
         f'docker run -it -v "{folder_to_run.resolve()}:/ngen/ngen/data" --user $(id -u):$(id -g) {DOCKER_IMAGE_NAME}'
     )
+    logging.info("FOR PODMAN:")
+    logging.info(
+        f'podman run -it -v "{folder_to_run.resolve()}:/ngen/ngen/data" docker://{DOCKER_IMAGE_NAME}'
+    )
 
 
 def run_calibration(folder_to_run: Path) -> None:
