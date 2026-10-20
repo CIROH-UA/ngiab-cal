@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import sqlite3
 import subprocess
 import sys
@@ -219,14 +220,29 @@ def create_calibration_config(
     write_ngen_cal_config(files, gage_id, start, end, iterations, warmup_days, calib_ratio)
 
 
+def shm_size_flag() -> str:
+    """``--shm-size <bytes>`` for the host's /dev/shm, or nothing where the host has none.
+
+    ngen runs one MPI process per nexus, up to the host's core count, and their shared memory
+    outgrows Docker's 64 MiB default on a large basin; a container's /dev/shm is a tmpfs that
+    holds memory only as it is used. macOS and Windows have no /dev/shm to read, and keep
+    Docker's default.
+    """
+    try:
+        fs = os.statvfs("/dev/shm")
+    except (AttributeError, OSError):
+        return ""
+    return f"--shm-size {fs.f_frsize * fs.f_blocks}"
+
+
 def print_run_command(folder_to_run: Path) -> None:
     logging.info("This is still experimental, run the following command to start calibration:")
     logging.info(
-        f'docker run -it -v "{folder_to_run.resolve()}:/ngen/ngen/data" --user $(id -u):$(id -g) {DOCKER_IMAGE_NAME}'
+        f'docker run {shm_size_flag()} -it -v "{folder_to_run.resolve()}:/ngen/ngen/data" --user $(id -u):$(id -g) {DOCKER_IMAGE_NAME}'
     )
     logging.info("FOR PODMAN:")
     logging.info(
-        f'podman run -it -v "{folder_to_run.resolve()}:/ngen/ngen/data" docker://{DOCKER_IMAGE_NAME}'
+        f'podman run {shm_size_flag()} -it -v "{folder_to_run.resolve()}:/ngen/ngen/data" docker://{DOCKER_IMAGE_NAME}'
     )
 
 
@@ -237,7 +253,7 @@ def run_calibration(folder_to_run: Path) -> None:
         logging.error("Docker is not running, please start Docker and try again.")
     logging.warning("Beginning calibration...")
     try:
-        command = f'docker run --rm -it -v "{str(folder_to_run.resolve())}:/ngen/ngen/data" --user $(id -u):$(id -g) {DOCKER_IMAGE_NAME} /calibration/run.sh'
+        command = f'docker run --rm {shm_size_flag()} -it -v "{str(folder_to_run.resolve())}:/ngen/ngen/data" --user $(id -u):$(id -g) {DOCKER_IMAGE_NAME} /calibration/run.sh'
         subprocess.run(command, shell=True)
         logging.info("Calibration complete.")
     except:
